@@ -18,7 +18,7 @@
   .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;margin:0 0 20px}
   h2{font-size:1.15rem;margin:0 0 12px;color:var(--navy)} h3{font-size:1rem;margin:16px 0 8px}
   label{display:block;font-size:.9rem;color:var(--muted);margin:10px 0 4px}
-  input{width:100%;font:inherit;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);text-transform:uppercase;letter-spacing:1px}
+  input{width:100%;font:inherit;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);letter-spacing:1px}
   input::placeholder{text-transform:none;letter-spacing:0}
   .row{display:grid;grid-template-columns:1fr 1fr;gap:14px} @media(max-width:600px){.row{grid-template-columns:1fr}}
   button{font:inherit;font-weight:600;padding:11px 18px;border:0;border-radius:10px;background:var(--blue);color:#fff;cursor:pointer;margin-top:14px}
@@ -29,7 +29,7 @@
   table{width:100%;border-collapse:collapse;font-size:.93rem;margin-top:8px} th,td{padding:9px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top} th{color:var(--muted);font-weight:600;font-size:.82rem;text-transform:uppercase;letter-spacing:.5px} td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
   .tablewrap{overflow-x:auto}
   .tabs{display:flex;gap:8px;margin-bottom:12px} .tabs button{margin:0;padding:8px 14px;background:var(--soft);color:var(--ink)} .tabs button.on{background:var(--blue);color:#fff}
-  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
+  .grid{display:grid;grid-template-columns:1fr;gap:14px}
   .stat{display:flex;gap:14px;flex-wrap:wrap;color:var(--muted);font-size:.88rem;margin:6px 0 8px} .stat b{color:var(--ink)}
   svg text{font-family:inherit}
   .legend{font-size:.85rem;color:var(--muted);margin-top:6px} .sw{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-1px;margin-right:4px}
@@ -49,11 +49,11 @@
     <h2>See your scores</h2>
     <div class="row">
       <div><label for="no">Student number</label><input id="no" placeholder="e.g. 24-LN-0584" autocomplete="off" autocapitalize="characters"></div>
-      <div><label for="code">Access code</label><input id="code" placeholder="8 characters from your instructor" autocomplete="off" autocapitalize="characters" maxlength="8"></div>
+      <div><label for="code">Mobile number</label><input id="code" placeholder="09XXXXXXXXX, as on the class list" autocomplete="off" inputmode="numeric" maxlength="14"></div>
     </div>
     <button id="unlock">Unlock my scores</button>
     <div class="err hidden" id="err"></div>
-    <p class="note">Your record is stored encrypted and is decrypted only on your device. The code was given to you privately; it is not your student number and it cannot be recovered from this page. Lost it? Ask your instructor for a new one.</p>
+    <p class="note">Use the mobile number you gave the Registrar (it is on the class list). Your record is stored encrypted and is decrypted only on your device; nothing is sent anywhere. If your number has changed or does not work, tell your instructor.</p>
   </section>
 
   <section class="card hidden" id="me">
@@ -96,14 +96,22 @@
   const sections = Object.keys(DATA.sections);
   let cur = sections[0];
   function histSVG(bins, maxCount, color){
-    const w = 300, h = 120, bw = w / 10, top = 14;
-    let s = `<svg viewBox="0 0 ${w} ${h + 26}" width="100%" role="img" aria-label="score distribution">`;
+    const left = 44, w = 720, h = 200, top = 16, bottom = 34, cw = (w - left - 10) / 10;
+    const ymax = Math.max(1, Math.ceil(maxCount / 5) * 5), ticks = 5;
+    let s = `<svg viewBox="0 0 ${w} ${h + top + bottom}" width="100%" role="img" aria-label="score distribution">`;
+    s += `<text x="12" y="${top + h / 2}" font-size="11" fill="currentColor" opacity=".75" text-anchor="middle" transform="rotate(-90 12 ${top + h / 2})">students</text>`;
+    for (let t = 0; t <= ticks; t++){
+      const v = Math.round(ymax * t / ticks), y = top + h - (v / ymax) * h;
+      s += `<line x1="${left}" y1="${y}" x2="${w - 10}" y2="${y}" stroke="currentColor" opacity=".15"></line>`;
+      s += `<text x="${left - 6}" y="${y + 4}" font-size="11" text-anchor="end" fill="currentColor" opacity=".75">${v}</text>`;
+    }
     bins.forEach((n, i) => {
-      const bh = maxCount ? (n / maxCount) * h : 0;
-      s += `<rect x="${i * bw + 3}" y="${top + h - bh}" width="${bw - 6}" height="${bh}" rx="3" fill="${color}"></rect>`;
-      if (n) s += `<text x="${i * bw + bw / 2}" y="${top + h - bh - 3}" font-size="10" text-anchor="middle" fill="currentColor">${n}</text>`;
-      s += `<text x="${i * bw + bw / 2}" y="${top + h + 14}" font-size="9" text-anchor="middle" fill="currentColor" opacity=".7">${i * 10}–${i * 10 + 10}%</text>`;
+      const bh = (n / ymax) * h, x = left + i * cw;
+      s += `<rect x="${x + 6}" y="${top + h - bh}" width="${cw - 12}" height="${bh}" rx="4" fill="${color}"></rect>`;
+      if (n) s += `<text x="${x + cw / 2}" y="${top + h - bh - 4}" font-size="12" font-weight="600" text-anchor="middle" fill="currentColor">${n}</text>`;
+      s += `<text x="${x + cw / 2}" y="${top + h + 16}" font-size="11" text-anchor="middle" fill="currentColor" opacity=".8">${i * 10}–${i * 10 + 10}%</text>`;
     });
+    s += `<text x="${left + (w - left - 10) / 2}" y="${top + h + 31}" font-size="11" text-anchor="middle" fill="currentColor" opacity=".75">score as a percentage of the maximum</text>`;
     return s + '</svg>';
   }
   function renderAnalytics(){
@@ -117,7 +125,7 @@
         <h3 style="margin-top:0">${a.label}<span class="pill">${a.category} · ${a.term}</span></h3>
         <div class="stat"><span>Max <b>${a.max}</b></span><span>Submitted <b>${a.submitted}/${a.students}</b></span><span>Mean <b>${a.mean}</b></span><span>Median <b>${a.median}</b></span><span>Highest <b>${a.max_score}</b></span></div>
         ${histSVG(a.histogram, Math.max(...a.histogram), 'var(--bar)')}
-        <div class="legend">Number of students in each score band</div>
+        <div class="legend">Each bar is the number of students whose score fell in that band</div>
       </div>`).join('');
   }
   renderAnalytics();
@@ -165,16 +173,18 @@
     $('#me').scrollIntoView({ behavior: 'smooth' });
   }
   $('#unlock').onclick = async () => {
-    const no = $('#no').value.trim().toUpperCase(), code = $('#code').value.trim().toUpperCase();
+    const no = $('#no').value.trim().toUpperCase();
+    let code = $('#code').value.replace(/\D/g, '');
+    if (code.startsWith('63') && code.length === 12) code = '0' + code.slice(2);
     $('#err').classList.add('hidden');
-    if (!no || code.length !== 8) { $('#err').textContent = 'Enter your student number and the 8-character access code.'; $('#err').classList.remove('hidden'); return; }
+    if (!no || code.length < 10) { $('#err').textContent = 'Enter your student number and your 11-digit mobile number.'; $('#err').classList.remove('hidden'); return; }
     $('#unlock').disabled = true; $('#unlock').textContent = 'Unlocking…';
     try {
       const rec = DATA.records[await sha256hex(`MD101|${no}|${code}`)];
       if (!rec) throw new Error('nomatch');
       renderMe(await decrypt(no, code, rec));
     } catch (e) {
-      $('#err').textContent = 'No record matches that student number and code. Check both and try again.'; $('#err').classList.remove('hidden');
+      $('#err').textContent = 'No record matches that student number and mobile number. Check both; the number must be the one on the class list.'; $('#err').classList.remove('hidden');
     } finally { $('#unlock').disabled = false; $('#unlock').textContent = 'Unlock my scores'; }
   };
   $('#code').addEventListener('keydown', e => { if (e.key === 'Enter') $('#unlock').click(); });
