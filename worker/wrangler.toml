@@ -1,15 +1,18 @@
 name = "md101-scores-api"
 main = "src/index.js"
 compatibility_date = "2025-06-01"
+# Live at https://md101-scores-api.jsonmat.workers.dev ; no per-version preview URLs.
+workers_dev = true
+preview_urls = false
 
 # Only the GitHub Pages site may call the API from a browser.
 [vars]
 ALLOWED_ORIGINS = "https://jsonoyamat.github.io"
 
-# After `npx wrangler d1 create md101`, paste the database_id it prints here.
+# Created with `npx wrangler d1 create md101` (region APAC). The binding name must stay "DB": the Worker uses env.DB.
 [[d1_databases]]
 binding = "DB"
 database_name = "md101"
-database_id = "REPLACE_WITH_DATABASE_ID_FROM_d1_create"
+database_id = "30d2c295-ccdc-4de5-8d04-a92b8a57fea9"
 
 # SERVER_SECRET is a secret, not a var:  npx wrangler secret put SERVER_SECRET

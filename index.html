@@ -87,8 +87,8 @@
 
 <script>
 (async function(){
-  // Score server (Cloudflare Worker). Set after `npx wrangler deploy`, e.g. https://md101-scores-api.<account>.workers.dev/api/scores
-  const API_URL = '';
+  // Score server (Cloudflare Worker + D1, see worker/). Returns one student's record after a rate-limited check.
+  const API_URL = 'https://md101-scores-api.jsonmat.workers.dev/api/scores';
   const $ = s => document.querySelector(s);
   const pct = (s, m) => Math.round(100 * s / m);
   const showErr = t => { $('#err').textContent = t; $('#err').classList.remove('hidden'); };
