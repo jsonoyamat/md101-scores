@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MD 101 Score Portal</title>
+<meta name="description" content="Pangasinan State University MD 101 class scores. Students unlock their own record with a private access code; class analytics are anonymous.">
+<style>
+  :root{--bg:#f4f6fb;--card:#ffffff;--ink:#1b2a4a;--muted:#5b6781;--line:#dde3ee;--navy:#1f3864;--blue:#2f80c3;--orange:#d9772b;--green:#1f6f5f;--soft:#e8f1fa;--bar:#2f80c3;--barme:#d9772b}
+  @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#0f172a;--card:#172036;--ink:#e6edf7;--muted:#a7b3c9;--line:#2a3650;--navy:#8fc1ec;--soft:#1e2b47;--bar:#5aa3e0;--barme:#f0a35c}}
+  :root[data-theme="dark"]{--bg:#0f172a;--card:#172036;--ink:#e6edf7;--muted:#a7b3c9;--line:#2a3650;--navy:#8fc1ec;--soft:#1e2b47;--bar:#5aa3e0;--barme:#f0a35c}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:"IBM Plex Sans",-apple-system,Segoe UI,Arial,sans-serif;line-height:1.45}
+  header{background:#1f3864;color:#fff;padding:28px 16px}
+  .wrap{max-width:1040px;margin:0 auto;padding:0 16px}
+  header h1{margin:0;font-size:1.6rem} header p{margin:6px 0 0;color:#bfd8f2;font-size:.95rem}
+  main{padding:24px 0 48px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;margin:0 0 20px}
+  h2{font-size:1.15rem;margin:0 0 12px;color:var(--navy)} h3{font-size:1rem;margin:16px 0 8px}
+  label{display:block;font-size:.9rem;color:var(--muted);margin:10px 0 4px}
+  input{width:100%;font:inherit;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);text-transform:uppercase;letter-spacing:1px}
+  input::placeholder{text-transform:none;letter-spacing:0}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:14px} @media(max-width:600px){.row{grid-template-columns:1fr}}
+  button{font:inherit;font-weight:600;padding:11px 18px;border:0;border-radius:10px;background:var(--blue);color:#fff;cursor:pointer;margin-top:14px}
+  button.ghost{background:transparent;color:var(--blue);border:1px solid var(--blue)}
+  .err{color:#c0392b;margin-top:10px;font-size:.95rem} .note{color:var(--muted);font-size:.9rem;margin-top:12px}
+  .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin:12px 0}
+  .tile{background:var(--soft);border-radius:12px;padding:14px} .tile .big{font-size:1.8rem;font-weight:700;color:var(--navy)} .tile .lbl{font-size:.85rem;color:var(--muted)}
+  table{width:100%;border-collapse:collapse;font-size:.93rem;margin-top:8px} th,td{padding:9px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top} th{color:var(--muted);font-weight:600;font-size:.82rem;text-transform:uppercase;letter-spacing:.5px} td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+  .tablewrap{overflow-x:auto}
+  .tabs{display:flex;gap:8px;margin-bottom:12px} .tabs button{margin:0;padding:8px 14px;background:var(--soft);color:var(--ink)} .tabs button.on{background:var(--blue);color:#fff}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
+  .stat{display:flex;gap:14px;flex-wrap:wrap;color:var(--muted);font-size:.88rem;margin:6px 0 8px} .stat b{color:var(--ink)}
+  svg text{font-family:inherit}
+  .legend{font-size:.85rem;color:var(--muted);margin-top:6px} .sw{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-1px;margin-right:4px}
+  .pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:.78rem;background:var(--soft);color:var(--navy);margin-left:6px}
+  footer{color:var(--muted);font-size:.85rem;padding:0 16px 32px}
+  .hidden{display:none}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <h1>MD 101 Score Portal</h1>
+  <p id="sub">Mobile Application Development 1 · Pangasinan State University, Lingayen Campus</p>
+</div></header>
+<main><div class="wrap">
+
+  <section class="card" id="login">
+    <h2>See your scores</h2>
+    <div class="row">
+      <div><label for="no">Student number</label><input id="no" placeholder="e.g. 24-LN-0584" autocomplete="off" autocapitalize="characters"></div>
+      <div><label for="code">Access code</label><input id="code" placeholder="8 characters from your instructor" autocomplete="off" autocapitalize="characters" maxlength="8"></div>
+    </div>
+    <button id="unlock">Unlock my scores</button>
+    <div class="err hidden" id="err"></div>
+    <p class="note">Your record is stored encrypted and is decrypted only on your device. The code was given to you privately; it is not your student number and it cannot be recovered from this page. Lost it? Ask your instructor for a new one.</p>
+  </section>
+
+  <section class="card hidden" id="me">
+    <h2 id="meName"></h2>
+    <div class="stat"><span id="meSection"></span><span>Updated <b id="meDate"></b></span></div>
+    <div class="tiles" id="meTiles"></div>
+    <h3>Your assessments</h3>
+    <div class="tablewrap"><table id="meTable"><thead><tr><th>Assessment</th><th>Type</th><th class="num">Your score</th><th class="num">Class average</th><th class="num">Rank</th><th class="num">Percentile</th></tr></thead><tbody></tbody></table></div>
+    <h3>You against the class average</h3>
+    <div id="meChart"></div>
+    <div class="legend"><span class="sw" style="background:var(--barme)"></span>You &nbsp; <span class="sw" style="background:var(--bar)"></span>Class average &nbsp;· both as a percentage of the maximum score</div>
+    <button class="ghost" id="lock">Lock</button>
+  </section>
+
+  <section class="card" id="analytics">
+    <h2>Class analytics</h2>
+    <div class="tabs" id="tabs"></div>
+    <div id="sectionStats"></div>
+    <div class="grid" id="charts"></div>
+    <p class="note">These figures are anonymous: counts, averages and score distributions only. No individual score is shown here.</p>
+  </section>
+
+</div></main>
+<footer><div class="wrap">Scores are encoded from the official class record. If something looks wrong, tell your instructor during the next laboratory session. <span id="gen"></span></div></footer>
+
+<script>
+(async function(){
+  const $ = s => document.querySelector(s);
+  const enc = new TextEncoder();
+  const hex2buf = h => new Uint8Array(h.match(/../g).map(b => parseInt(b, 16)));
+  const pct = (s, m) => Math.round(100 * s / m);
+  let DATA;
+  try {
+    DATA = await (await fetch('data.json?v=' + Date.now())).json();
+  } catch (e) { $('#err').textContent = 'The score data could not be loaded. Try again later.'; $('#err').classList.remove('hidden'); return; }
+  $('#sub').textContent = DATA.course + ' · ' + DATA.term;
+  $('#gen').textContent = 'Data generated ' + DATA.generated + '.';
+
+  // ---------- class analytics ----------
+  const sections = Object.keys(DATA.sections);
+  let cur = sections[0];
+  function histSVG(bins, maxCount, color){
+    const w = 300, h = 120, bw = w / 10, top = 14;
+    let s = `<svg viewBox="0 0 ${w} ${h + 26}" width="100%" role="img" aria-label="score distribution">`;
+    bins.forEach((n, i) => {
+      const bh = maxCount ? (n / maxCount) * h : 0;
+      s += `<rect x="${i * bw + 3}" y="${top + h - bh}" width="${bw - 6}" height="${bh}" rx="3" fill="${color}"></rect>`;
+      if (n) s += `<text x="${i * bw + bw / 2}" y="${top + h - bh - 3}" font-size="10" text-anchor="middle" fill="currentColor">${n}</text>`;
+      s += `<text x="${i * bw + bw / 2}" y="${top + h + 14}" font-size="9" text-anchor="middle" fill="currentColor" opacity=".7">${i * 10}–${i * 10 + 10}%</text>`;
+    });
+    return s + '</svg>';
+  }
+  function renderAnalytics(){
+    $('#tabs').innerHTML = sections.map(s => `<button data-s="${s}" class="${s === cur ? 'on' : ''}">III-BSIT ${s}</button>`).join('');
+    $('#tabs').querySelectorAll('button').forEach(b => b.onclick = () => { cur = b.dataset.s; renderAnalytics(); });
+    const sec = DATA.sections[cur];
+    if (!sec.assessments.length){ $('#sectionStats').innerHTML = `<p class="note">No scores have been encoded for III-BSIT ${cur} yet.</p>`; $('#charts').innerHTML = ''; return; }
+    $('#sectionStats').innerHTML = `<div class="stat"><span><b>${sec.students}</b> students</span><span><b>${sec.assessments.length}</b> graded assessments</span></div>`;
+    $('#charts').innerHTML = sec.assessments.map(a => `
+      <div class="card" style="margin:0">
+        <h3 style="margin-top:0">${a.label}<span class="pill">${a.category} · ${a.term}</span></h3>
+        <div class="stat"><span>Max <b>${a.max}</b></span><span>Submitted <b>${a.submitted}/${a.students}</b></span><span>Mean <b>${a.mean}</b></span><span>Median <b>${a.median}</b></span><span>Highest <b>${a.max_score}</b></span></div>
+        ${histSVG(a.histogram, Math.max(...a.histogram), 'var(--bar)')}
+        <div class="legend">Number of students in each score band</div>
+      </div>`).join('');
+  }
+  renderAnalytics();
+
+  // ---------- personal record ----------
+  async function sha256hex(str){ const d = await crypto.subtle.digest('SHA-256', enc.encode(str)); return [...new Uint8Array(d)].map(b => b.toString(16).padStart(2, '0')).join(''); }
+  async function decrypt(no, code, rec){
+    const base = await crypto.subtle.importKey('raw', enc.encode(`${no}|${code}`), 'PBKDF2', false, ['deriveKey']);
+    const key = await crypto.subtle.deriveKey({ name: 'PBKDF2', salt: hex2buf(rec.salt), iterations: DATA.kdf.rounds, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, false, ['decrypt']);
+    const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: hex2buf(rec.iv) }, key, hex2buf(rec.ct));
+    return JSON.parse(new TextDecoder().decode(pt));
+  }
+  function renderMe(me){
+    $('#meName').textContent = me.name;
+    $('#meSection').innerHTML = `<b>${me.section}</b> · ${me.no}`;
+    $('#meDate').textContent = me.generated;
+    const tiles = [];
+    if (me.lab_standing !== null) tiles.push(['Laboratory standing', me.lab_standing + '%', 'your points so far ÷ maximum so far']);
+    if (me.lecture_standing !== null) tiles.push(['Lecture standing', me.lecture_standing + '%', 'your points so far ÷ maximum so far']);
+    const graded = me.items.filter(i => i.score !== null).length;
+    tiles.push(['Graded assessments', `${graded} of ${me.items.length}`, 'items with a score for you']);
+    $('#meTiles').innerHTML = tiles.map(t => `<div class="tile"><div class="big">${t[1]}</div><div class="lbl"><b>${t[0]}</b><br>${t[2]}</div></div>`).join('');
+    const sec = DATA.sections[me.section.slice(-1)] || { assessments: [] };
+    const avg = id => (sec.assessments.find(a => a.id === id) || {}).mean;
+    $('#meTable tbody').innerHTML = me.items.map(i => {
+      const a = avg(i.id);
+      return `<tr><td>${i.label}</td><td>${i.category} · ${i.term}</td>
+        <td class="num">${i.score === null ? '<span style="color:#c0392b">no submission</span>' : `<b>${i.score}</b> / ${i.max}`}</td>
+        <td class="num">${a === undefined ? '–' : a + ' / ' + i.max}</td>
+        <td class="num">${i.rank === null ? '–' : i.rank + ' of ' + i.submitted}</td>
+        <td class="num">${i.percentile === null ? '–' : 'above ' + i.percentile + '%'}</td></tr>`;
+    }).join('');
+    // chart: you vs class average, as % of max
+    const rows = me.items.filter(i => avg(i.id) !== undefined);
+    const bh = 18, gap = 10, lw = 170, w = 560, h = rows.length * (2 * bh + gap) + 10;
+    let s = `<svg viewBox="0 0 ${w} ${h}" width="100%" role="img" aria-label="your scores against the class average">`;
+    rows.forEach((i, k) => {
+      const y = k * (2 * bh + gap) + 4, you = i.score === null ? 0 : pct(i.score, i.max), cls = pct(avg(i.id), i.max), scale = (w - lw - 50) / 100;
+      s += `<text x="0" y="${y + bh + 4}" font-size="11" fill="currentColor">${i.label.length > 26 ? i.label.slice(0, 25) + '…' : i.label}</text>`;
+      s += `<rect x="${lw}" y="${y}" width="${you * scale}" height="${bh - 2}" rx="3" fill="var(--barme)"></rect><text x="${lw + you * scale + 4}" y="${y + bh - 6}" font-size="10" fill="currentColor">${i.score === null ? 'no submission' : you + '%'}</text>`;
+      s += `<rect x="${lw}" y="${y + bh}" width="${cls * scale}" height="${bh - 2}" rx="3" fill="var(--bar)"></rect><text x="${lw + cls * scale + 4}" y="${y + 2 * bh - 6}" font-size="10" fill="currentColor">${cls}%</text>`;
+    });
+    $('#meChart').innerHTML = s + '</svg>';
+    $('#me').classList.remove('hidden'); $('#login').classList.add('hidden');
+    $('#me').scrollIntoView({ behavior: 'smooth' });
+  }
+  $('#unlock').onclick = async () => {
+    const no = $('#no').value.trim().toUpperCase(), code = $('#code').value.trim().toUpperCase();
+    $('#err').classList.add('hidden');
+    if (!no || code.length !== 8) { $('#err').textContent = 'Enter your student number and the 8-character access code.'; $('#err').classList.remove('hidden'); return; }
+    $('#unlock').disabled = true; $('#unlock').textContent = 'Unlocking…';
+    try {
+      const rec = DATA.records[await sha256hex(`MD101|${no}|${code}`)];
+      if (!rec) throw new Error('nomatch');
+      renderMe(await decrypt(no, code, rec));
+    } catch (e) {
+      $('#err').textContent = 'No record matches that student number and code. Check both and try again.'; $('#err').classList.remove('hidden');
+    } finally { $('#unlock').disabled = false; $('#unlock').textContent = 'Unlock my scores'; }
+  };
+  $('#code').addEventListener('keydown', e => { if (e.key === 'Enter') $('#unlock').click(); });
+  $('#lock').onclick = () => { $('#me').classList.add('hidden'); $('#login').classList.remove('hidden'); $('#code').value = ''; $('#meTable tbody').innerHTML = ''; $('#meChart').innerHTML = ''; };
+})();
+</script>
+</body>
+</html>
