@@ -49,11 +49,11 @@
     <h2>See your scores</h2>
     <div class="row">
       <div><label for="no">Student number</label><input id="no" placeholder="e.g. 24-LN-0584" autocomplete="off" autocapitalize="characters"></div>
-      <div><label for="code">Mobile number</label><input id="code" placeholder="09XXXXXXXXX, as on the class list" autocomplete="off" inputmode="numeric" maxlength="14"></div>
+      <div><label for="code">Mobile number</label><input id="code" placeholder="09XXXXXXXXX, as registered in your student portal" autocomplete="off" inputmode="numeric" maxlength="14"></div>
     </div>
     <button id="unlock">Unlock my scores</button>
     <div class="err hidden" id="err"></div>
-    <p class="note">Use the mobile number you gave the Registrar (it is on the class list). Your record is stored encrypted and is decrypted only on your device; nothing is sent anywhere. If your number has changed or does not work, tell your instructor.</p>
+    <p class="note">Use the mobile number registered in your student portal. Your record is stored encrypted and is decrypted only on your device; nothing is sent anywhere. If your number has changed or does not work, tell your instructor.</p>
   </section>
 
   <section class="card hidden" id="me">
@@ -184,7 +184,7 @@
       if (!rec) throw new Error('nomatch');
       renderMe(await decrypt(no, code, rec));
     } catch (e) {
-      $('#err').textContent = 'No record matches that student number and mobile number. Check both; the number must be the one on the class list.'; $('#err').classList.remove('hidden');
+      $('#err').textContent = 'No record matches that student number and mobile number. Check both; the number must be the one registered in your student portal.'; $('#err').classList.remove('hidden');
     } finally { $('#unlock').disabled = false; $('#unlock').textContent = 'Unlock my scores'; }
   };
   $('#code').addEventListener('keydown', e => { if (e.key === 'Enter') $('#unlock').click(); });

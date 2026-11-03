@@ -4,7 +4,7 @@ Score portal for **MD 101 – Mobile Application Development 1**, Pangasinan Sta
 
 Open the portal: **https://jsonoyamat.github.io/md101-scores/**
 
-- Enter your **student number** and the **mobile number** you gave the Registrar (the one on the class list) to see your own scores, your rank and percentile per assessment, and your standing so far.
+- Enter your **student number** and the **mobile number** registered in your student portal to see your own scores, your rank and percentile per assessment, and your standing so far.
 - The **Class analytics** section is open to everyone and shows only anonymous figures: how many submitted, the average, the median and the score distribution.
 
 ## How your privacy is protected
