@@ -1,0 +1,15 @@
+name = "md101-scores-api"
+main = "src/index.js"
+compatibility_date = "2025-06-01"
+
+# Only the GitHub Pages site may call the API from a browser.
+[vars]
+ALLOWED_ORIGINS = "https://jsonoyamat.github.io"
+
+# After `npx wrangler d1 create md101`, paste the database_id it prints here.
+[[d1_databases]]
+binding = "DB"
+database_name = "md101"
+database_id = "REPLACE_WITH_DATABASE_ID_FROM_d1_create"
+
+# SERVER_SECRET is a secret, not a var:  npx wrangler secret put SERVER_SECRET

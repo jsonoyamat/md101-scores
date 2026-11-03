@@ -1,0 +1,7 @@
+# Never commit student data or secrets.
+data.json
+*.sql.tmp
+worker/node_modules/
+worker/.wrangler/
+worker/.dev.vars
+.DS_Store

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>MD 101 Score Portal</title>
-<meta name="description" content="Pangasinan State University MD 101 class scores. Students unlock their own record with a private access code; class analytics are anonymous.">
+<meta name="description" content="Pangasinan State University MD 101 class scores. Students see their own record after a rate-limited server check; class analytics are anonymous.">
 <style>
   :root{--bg:#f4f6fb;--card:#ffffff;--ink:#1b2a4a;--muted:#5b6781;--line:#dde3ee;--navy:#1f3864;--blue:#2f80c3;--orange:#d9772b;--green:#1f6f5f;--soft:#e8f1fa;--bar:#2f80c3;--barme:#d9772b}
   @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#0f172a;--card:#172036;--ink:#e6edf7;--muted:#a7b3c9;--line:#2a3650;--navy:#8fc1ec;--soft:#1e2b47;--bar:#5aa3e0;--barme:#f0a35c}}
@@ -58,7 +58,7 @@
     </div>
     <button id="unlock">Unlock my scores</button>
     <div class="err hidden" id="err"></div>
-    <p class="note">Use the mobile number registered in your student portal. Your record is stored encrypted and is decrypted only on your device; nothing is sent anywhere. If your number has changed or does not work, tell your instructor.</p>
+    <p class="note">Use the mobile number registered in your student portal. Your student number and mobile number are checked by the score server, which returns only your own record; attempts are limited, so several wrong tries lock that student number for a few minutes. If your number has changed or does not work, tell your instructor.</p>
   </section>
 
   <section class="card hidden" id="me">
@@ -87,19 +87,20 @@
 
 <script>
 (async function(){
+  // Score server (Cloudflare Worker). Set after `npx wrangler deploy`, e.g. https://md101-scores-api.<account>.workers.dev/api/scores
+  const API_URL = '';
   const $ = s => document.querySelector(s);
-  const enc = new TextEncoder();
-  const hex2buf = h => new Uint8Array(h.match(/../g).map(b => parseInt(b, 16)));
   const pct = (s, m) => Math.round(100 * s / m);
-  let DATA;
+  const showErr = t => { $('#err').textContent = t; $('#err').classList.remove('hidden'); };
+  let DATA = { course: 'MD 101 – Mobile Application Development 1', term: '', generated: '', sections: {} };
   try {
-    DATA = await (await fetch('data.json?v=' + Date.now())).json();
-  } catch (e) { $('#err').textContent = 'The score data could not be loaded. Try again later.'; $('#err').classList.remove('hidden'); return; }
+    DATA = await (await fetch('analytics.json?v=' + Date.now(), { cache: 'no-store' })).json();
+  } catch (e) { showErr('The class analytics could not be loaded. Try again later.'); }
   $('#sub').textContent = DATA.course + ' · ' + DATA.term;
   $('#gen').textContent = 'Data generated ' + DATA.generated + '.';
 
   // ---------- class analytics ----------
-  const sections = Object.keys(DATA.sections);
+  const sections = Object.keys(DATA.sections || {});
   let cur = sections[0];
   function histSVG(bins, maxCount, color){
     const left = 44, w = 720, h = 200, top = 16, bottom = 34, cw = (w - left - 10) / 10;
@@ -121,6 +122,7 @@
     return s + '</svg>';
   }
   function renderAnalytics(){
+    if (!sections.length){ $('#sectionStats').innerHTML = '<p class="note">No class analytics yet.</p>'; return; }
     $('#tabs').innerHTML = sections.map(s => `<button data-s="${s}" class="${s === cur ? 'on' : ''}">III-BSIT ${s}</button>`).join('');
     $('#tabs').querySelectorAll('button').forEach(b => b.onclick = () => { cur = b.dataset.s; renderAnalytics(); });
     const sec = DATA.sections[cur];
@@ -137,13 +139,6 @@
   renderAnalytics();
 
   // ---------- personal record ----------
-  async function sha256hex(str){ const d = await crypto.subtle.digest('SHA-256', enc.encode(str)); return [...new Uint8Array(d)].map(b => b.toString(16).padStart(2, '0')).join(''); }
-  async function decrypt(no, code, rec){
-    const base = await crypto.subtle.importKey('raw', enc.encode(`${no}|${code}`), 'PBKDF2', false, ['deriveKey']);
-    const key = await crypto.subtle.deriveKey({ name: 'PBKDF2', salt: hex2buf(rec.salt), iterations: DATA.kdf.rounds, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, false, ['decrypt']);
-    const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: hex2buf(rec.iv) }, key, hex2buf(rec.ct));
-    return JSON.parse(new TextDecoder().decode(pt));
-  }
   function renderMe(me){
     $('#meName').textContent = me.name;
     $('#meSection').innerHTML = `<b>${me.section}</b> · ${me.no}`;
@@ -154,7 +149,7 @@
     const graded = me.items.filter(i => i.score !== null).length;
     tiles.push(['Graded assessments', `${graded} of ${me.items.length}`, 'items with a score for you']);
     $('#meTiles').innerHTML = tiles.map(t => `<div class="tile"><div class="big">${t[1]}</div><div class="lbl"><b>${t[0]}</b><br>${t[2]}</div></div>`).join('');
-    const sec = DATA.sections[me.section.slice(-1)] || { assessments: [] };
+    const sec = (DATA.sections || {})[String(me.section).slice(-1)] || { assessments: [] };
     const avg = id => (sec.assessments.find(a => a.id === id) || {}).mean;
     const esc = t => String(t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
     $('#meTable tbody').innerHTML = me.items.map((i, k) => {
@@ -192,14 +187,22 @@
     let code = $('#code').value.replace(/\D/g, '');
     if (code.startsWith('63') && code.length === 12) code = '0' + code.slice(2);
     $('#err').classList.add('hidden');
-    if (!no || code.length < 10) { $('#err').textContent = 'Enter your student number and your 11-digit mobile number.'; $('#err').classList.remove('hidden'); return; }
-    $('#unlock').disabled = true; $('#unlock').textContent = 'Unlocking…';
+    if (!no || code.length < 10) { showErr('Enter your student number and your 11-digit mobile number.'); return; }
+    if (!API_URL) { showErr('Individual scores are moving to a new, more secure server and are unavailable for a short while. Please check back later.'); return; }
+    $('#unlock').disabled = true; $('#unlock').textContent = 'Checking…';
     try {
-      const rec = DATA.records[await sha256hex(`MD101|${no}|${code}`)];
-      if (!rec) throw new Error('nomatch');
-      renderMe(await decrypt(no, code, rec));
+      const res = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ no, code }), cache: 'no-store' });
+      if (res.status === 200) { renderMe(await res.json()); return; }
+      if (res.status === 429) {
+        const wait = Number(res.headers.get('Retry-After')) || 0;
+        showErr('Too many attempts for this student number. Wait ' + (wait ? Math.ceil(wait / 60) + ' minute' + (wait > 60 ? 's' : '') : 'a few minutes') + ' and try again.');
+      } else if (res.status === 401) {
+        showErr('No record matches that student number and mobile number. Check both; the number must be the one registered in your student portal.');
+      } else {
+        showErr('The score server could not be reached. Try again later.');
+      }
     } catch (e) {
-      $('#err').textContent = 'No record matches that student number and mobile number. Check both; the number must be the one registered in your student portal.'; $('#err').classList.remove('hidden');
+      showErr('The score server could not be reached. Check your connection and try again.');
     } finally { $('#unlock').disabled = false; $('#unlock').textContent = 'Unlock my scores'; }
   };
   $('#code').addEventListener('keydown', e => { if (e.key === 'Enter') $('#unlock').click(); });

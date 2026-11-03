@@ -4,9 +4,15 @@ Score portal for **MD 101 – Mobile Application Development 1**, Pangasinan Sta
 
 Open the portal: **https://jsonoyamat.github.io/md101-scores/**
 
-- Enter your **student number** and the **mobile number** registered in your student portal to see your own scores, your rank and percentile per assessment, and your standing so far.
+- Enter your **student number** and the **mobile number** registered in your student portal to see your own scores, rubric breakdowns, notes, rank and percentile, and your standing so far.
 - The **Class analytics** section is open to everyone and shows only anonymous figures: how many submitted, the average, the median and the score distribution.
 
 ## How your privacy is protected
 
-This repository holds no names and no plain scores. Each student's record is encrypted (AES-256-GCM) with a key derived from the student number and the student's mobile number (PBKDF2-SHA256, 200 000 rounds). The page decrypts your record in your own browser; nothing is sent anywhere. Without the right number, a record cannot be opened, and nothing about you can be read from this site. If your number has changed, tell your instructor.
+This site publishes no names, student numbers, mobile numbers or individual scores. The only data file here is `analytics.json`, which holds class-level counts, averages and histograms.
+
+Individual records live in a private database behind a small server (`worker/`, a Cloudflare Worker with D1). When you unlock, the page sends your student number and mobile number to that server, which checks them and returns **only your own record**. The server stores an HMAC of each mobile number, never the number itself, and limits attempts: 8 per student number and 40 per network address every 15 minutes. If your number has changed, tell your instructor.
+
+## For the instructor
+
+See `worker/README.md` for setup and the update routine.
