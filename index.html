@@ -36,6 +36,11 @@
   .pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:.78rem;background:var(--soft);color:var(--navy);margin-left:6px}
   footer{color:var(--muted);font-size:.85rem;padding:0 16px 32px}
   .hidden{display:none}
+  button.mini{margin:0;padding:4px 10px;font-size:.78rem;font-weight:600;background:var(--soft);color:var(--navy);border-radius:999px}
+  tr.details td{background:var(--soft);border-bottom:1px solid var(--line);padding:12px 14px}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px}
+  .chip{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:4px 9px;font-size:.82rem} .chip b{color:var(--navy)}
+  .notes{font-size:.88rem;color:var(--ink);line-height:1.45} .notes .lbl{font-weight:600;color:var(--muted);margin-right:6px}
 </style>
 </head>
 <body>
@@ -61,7 +66,8 @@
     <div class="stat"><span id="meSection"></span><span>Updated <b id="meDate"></b></span></div>
     <div class="tiles" id="meTiles"></div>
     <h3>Your assessments</h3>
-    <div class="tablewrap"><table id="meTable"><thead><tr><th>Assessment</th><th>Type</th><th class="num">Your score</th><th class="num">Class average</th><th class="num">Rank</th><th class="num">Percentile</th></tr></thead><tbody></tbody></table></div>
+    <div class="tablewrap"><table id="meTable"><thead><tr><th>Assessment</th><th>Type</th><th class="num">Your score</th><th class="num">Class average</th><th class="num">Rank</th><th class="num">Percentile</th><th></th></tr></thead><tbody></tbody></table></div>
+    <p class="note">Details shows how the score was built (the rubric) and the checker's notes on your submission.</p>
     <h3>You against the class average</h3>
     <div id="meChart"></div>
     <div class="legend"><span class="sw" style="background:var(--barme)"></span>You &nbsp; <span class="sw" style="background:var(--bar)"></span>Class average &nbsp;· both as a percentage of the maximum score</div>
@@ -150,14 +156,23 @@
     $('#meTiles').innerHTML = tiles.map(t => `<div class="tile"><div class="big">${t[1]}</div><div class="lbl"><b>${t[0]}</b><br>${t[2]}</div></div>`).join('');
     const sec = DATA.sections[me.section.slice(-1)] || { assessments: [] };
     const avg = id => (sec.assessments.find(a => a.id === id) || {}).mean;
-    $('#meTable tbody').innerHTML = me.items.map(i => {
+    const esc = t => String(t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+    $('#meTable tbody').innerHTML = me.items.map((i, k) => {
       const a = avg(i.id);
-      return `<tr><td>${i.label}</td><td>${i.category} · ${i.term}</td>
+      const has = i.score !== null && ((i.rubric && i.rubric.length) || (i.notes && i.notes.trim()));
+      const chips = (i.rubric || []).map(r => `<span class="chip">${esc(r.label)}: <b>${esc(r.value)}</b></span>`).join('');
+      const notes = i.notes ? `<div class="notes"><span class="lbl">Notes</span>${esc(i.notes)}</div>` : '';
+      return `<tr><td>${esc(i.label)}</td><td>${esc(i.category)} · ${esc(i.term)}</td>
         <td class="num">${i.score === null ? '<span style="color:#c0392b">no submission</span>' : `<b>${i.score}</b> / ${i.max}`}</td>
         <td class="num">${a === undefined ? '–' : a + ' / ' + i.max}</td>
         <td class="num">${i.rank === null ? '–' : i.rank + ' of ' + i.submitted}</td>
-        <td class="num">${i.percentile === null ? '–' : 'above ' + i.percentile + '%'}</td></tr>`;
+        <td class="num">${i.percentile === null ? '–' : 'above ' + i.percentile + '%'}</td>
+        <td>${has ? `<button class="mini" data-d="${k}">Details</button>` : ''}</td></tr>` +
+        (has ? `<tr class="details hidden" id="d${k}"><td colspan="7"><div class="chips">${chips}</div>${notes}</td></tr>` : '');
     }).join('');
+    $('#meTable tbody').querySelectorAll('button.mini').forEach(b => b.onclick = () => {
+      const row = $('#d' + b.dataset.d); row.classList.toggle('hidden'); b.textContent = row.classList.contains('hidden') ? 'Details' : 'Hide';
+    });
     // chart: you vs class average, as % of max
     const rows = me.items.filter(i => avg(i.id) !== undefined);
     const bh = 18, gap = 10, lw = 170, w = 560, h = rows.length * (2 * bh + gap) + 10;
